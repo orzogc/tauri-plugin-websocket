@@ -5,19 +5,33 @@ class WebSocket {
         this.id = id;
         this.listeners = listeners;
     }
-    static async connect(url, options) {
+    static async connect(url, config) {
         const listeners = [];
         const handler = (message) => {
             listeners.forEach((l) => l(message));
         };
+        if (config === null || config === void 0 ? void 0 : config.headers) {
+            config.headers = Array.from(new Headers(config.headers).entries());
+        }
         return await invoke("plugin:websocket|connect", {
             url,
             callbackFunction: transformCallback(handler),
-            options,
+            config,
         }).then((id) => new WebSocket(id, listeners));
     }
     addListener(cb) {
+        for (const listener of this.listeners) {
+            if (listener === cb) {
+                return;
+            }
+        }
         this.listeners.push(cb);
+    }
+    removeListener(cb) {
+        const index = this.listeners.indexOf(cb);
+        if (index > -1) {
+            this.listeners.splice(index, 1);
+        }
     }
     async send(message) {
         let m;
